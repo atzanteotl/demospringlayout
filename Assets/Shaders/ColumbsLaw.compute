@@ -1,0 +1,41 @@
+﻿// test.compute
+
+#pragma kernel ColumbsAlgo
+
+struct NodeDS {
+	float3 pos;
+	float3 acc;
+	float3 vel;
+};
+
+static const float repulsion = 220.0;
+
+RWStructuredBuffer<NodeDS> dataBuffer;
+RWStructuredBuffer<float3> accBuffer;
+
+[numthreads(1,1,1)]
+void ColumbsAlgo (uint3 dtid : SV_DispatchThreadID)
+{   
+	if (dtid.x != dtid.y){
+		//float3 d = nodeBuffer[dtid.x] - nodeBuffer[dtid.y];
+		//float distance = length(d) + 0.00001;
+		//float3 direction = noralize(d);
+
+		//float3 force = (direction * repulsion) / (distance * distance * 0.5);
+
+
+	}
+
+	if (dtid.x != dtid.y){
+    float3 d = dataBuffer[dtid.x].pos - dataBuffer[dtid.y].pos;
+    float distance = length(d) + 0.0001;
+    float3 direction = normalize(d);
+
+    if (distance < 125){
+    	float3 force = (direction * repulsion) / (distance * distance * 0.5 );
+    	dataBuffer[dtid.x].acc += force * 10000;
+    	dataBuffer[dtid.y].acc += force * -10000;
+    }
+    }
+
+}

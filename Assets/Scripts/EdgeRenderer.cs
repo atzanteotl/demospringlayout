@@ -6,8 +6,8 @@ public class EdgeRenderer : MonoBehaviour {
 
 	[SerializeField] LineRenderer _lineRenderer;
 
-	public Rigidbody Body1;
-	public Rigidbody Body2;
+	public Transform Body1;
+    public Transform Body2;
 
 	// Update is called once per frame
 	void LateUpdate () {

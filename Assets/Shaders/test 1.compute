@@ -1,0 +1,65 @@
+﻿// test.compute
+
+#pragma kernel HookesLaw
+
+RWTexture2D<float4> res;
+RWStructuredBuffer<float4> position;
+RWStructuredBuffer<float4> velocity;
+
+struct NodeDS {
+	float3 pos;
+	float3 acc;
+	float3 vel;
+};
+
+struct EdgeDS {
+	int id1;
+	int id2;
+};
+
+float springLength = 20;
+float springk = 22.2;
+
+const float deltaT = 0.01666;
+
+RWStructuredBuffer<NodeDS> dataBuffer;
+StructuredBuffer<EdgeDS> edgeDataBuffer;
+
+RWStructuredBuffer<float3> accBuffer;
+StructuredBuffer<int> adjacencyMatrix;
+RWStructuredBuffer<float3> velBuffer;
+
+int stride;
+
+[numthreads(16,16,1)]
+void HookesLaw (uint3 dtid : SV_DispatchThreadID, uint3 gid : SV_DispatchThreadID)
+{   
+	// index into our matrices
+	int idx = dtid.y * stride + dtid.x;
+
+	if (adjacencyMatrix[idx] != 0){
+
+		float3 d = dataBuffer[dtid.y].pos - dataBuffer[dtid.x].pos + 0.00001;
+		float displacement = springLength - length(d);
+		float3 direction = normalize(d);
+
+		accBuffer[dtid.y * stride + dtid.x] = springk * direction * displacement * -0.5 * 10000;
+		accBuffer[dtid.x * stride + dtid.y] = springk * direction * displacement * 0.5 * 10000;
+	}
+}
+
+#pragma kernel ComputeAcc
+
+[numthreads(16,1,1)]
+void ComputeAcc(uint3 dtid : SV_DispatchThreadID, uint3 gid : SV_DispatchThreadID)
+{
+    dataBuffer[dtid.x].acc = 0;
+	for (int j = 0; j < stride; ++j){
+		dataBuffer[dtid.x].acc += accBuffer[j * stride + dtid.x];
+	}
+    
+    float3 vel = (dataBuffer[dtid.x].vel + dataBuffer[dtid.x].acc * 0.01666) * 0.0001;
+    dataBuffer[dtid.x].vel = vel;
+    dataBuffer[dtid.x].pos = dataBuffer[dtid.x].pos + (vel * 0.01666);
+    velBuffer[dtid.x] = dataBuffer[dtid.x].pos;
+}
